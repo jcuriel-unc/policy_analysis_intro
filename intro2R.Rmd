@@ -235,6 +235,27 @@ str(mpv_df[,1]) # brackets get the row by cols; find data types
 
 ```
 
+## Data types 
+
+- Lots of "data types" can be shoved in DFs 
+
+  - Numeric: (11.6, 10, 555.345) 
+  
+  - Integer: numeric, but no decimals 
+  
+  - Complex - numeric w/imaginary numbers 
+  
+  - Character - text data 
+  
+  - Logical: TRUE or FALSE, aka Boolean 
+
+## Data types, example 
+
+```{r data types, echo=TRUE}
+str(mpv_df) # the "str" command tells you data types; 
+# might also be
+```
+
 ## Getting summary stats 
 
 - Use the "summary" fxn 
@@ -277,3 +298,121 @@ simp_tbl <- mpv_df %>% ## calls df
 ```{r results race, echo=TRUE,message=FALSE}
 kable(simp_tbl) # command from knitr; full tbl not visible
 ```
+
+## Graphics and descriptive stats 
+
+- Want to get at distribution
+
+  - Presented in easy to understand way 
+  
+- Key features: 
+
+  - Central tendancy: mean, median, mode 
+  
+  - Variance: Deviation from centrality 
+  
+  - Skewness: Asymmetry from distribution 
+  
+  - Kurtosis: Peaks/flats along distribution 
+  
+- Present these to identify "problems" in data generating process (DGP) 
+
+## Analyzing police violence by agency 
+
+```{r police violence1, echo=TRUE}
+num_agencies <- mpv_df %>% # creating a new object, called "num_agencies" 
+  group_by(agency_responsible,state) %>% # pipe tells to summarize by these 
+  tally() # tally gets the number of by groups above 
+## get size of df 
+dim(num_agencies) # 3 cols: agency_responsible, state, and n
+# 4704 rows 
+### get the dist of deaths in data by agency 
+quantile(num_agencies$n, seq(0,1,0.05)) #95th pct at 8; very skewed data 
+```
+
+```{r police violence 2, echo=TRUE}
+##look at above 95th pct 
+quantile(num_agencies$n, seq(0.95,1,0.01)) # top 1 pct 
+# above 28; let's subset 
+top1percent <- subset(num_agencies, n > 28)
+sum(top1percent$n)/nrow(mpv_df) ## tells us top 1% of depts responsible for 
+# 20 percent of deaths 
+nrow(top1percent)
+```
+
+## What we learned? 
+
+- 4704 agencies responsible for lethal police violence 
+
+- Most agencies in data killed one over decade + 
+
+- Relatively few (46 of 4704) responsible for 20% of deaths 
+
+- Who are these agencies? 
+
+  - Time to plot 
+
+- Tool: GGplot 
+
+  - commands: ggplot(), geom_density, and geom_text 
+  
+  - arguments: data; aes (aesthetics), x, y, fill, and color 
+  
+- Goal: identify main outliers and distribution 
+
+  - Create code to see norm in field of policy analysis 
+  
+## Plotting 
+
+```{r mpv plotting, echo=TRUE}
+# create a position variable for scattering 
+num_agencies$y_pos = 0.3 + runif(nrow(num_agencies), min=0.1,max=1.1)
+### create a plot for the num og agencies, distribution 
+update_geom_defaults("text", list(size = 24))
+agency_kill_dist <- ggplot(data=num_agencies, aes(x=n, y=..scaled..,
+                                                  fill="Police killings",col="Police killings")) +
+  geom_density() +  theme_minimal() + theme(legend.position="none") +
+  geom_text(data=subset(num_agencies,n>28), aes(y=y_pos, x=n,
+                                                label=stringr::str_wrap(agency_responsible,30), size=n,
+                                                col=as.factor(state)),alpha=0.6) +
+  xlim(0,250) + labs(title="Distribution police killings by police department",y="Density",
+                     x="Number of killings by police",
+                     caption="Text entries are the top 1% of agencies responsible for killings. Weighted as 
+                     the n of killings. Colors assigned by state of agency.")+
+  theme(axis.text=element_text(size=12),
+        title=element_text(size=12,face="bold"),legend.text = element_text(size=10)) +
+  scale_size(
+    breaks = c(10, 50, 100, 150,200,250),
+    range = c(2, 6)
+  ) 
+ggsave("plots/agency_shooting_dist.jpeg",
+       plot=agency_kill_dist, scale=1,width=9,
+       height=6,units = c("in"),dpi=600, bg="white")
+
+```
+
+## Presenting results 
+
+```{r plot result, echo=TRUE}
+agency_kill_dist
+```
+
+## Takeaways 
+
+- R is a strong processor of information 
+
+  - Normal math
+  
+  - External data 
+  
+- A primary way to summarize data 
+
+  - Mean, median, mode, range, etc. 
+  
+- Crucial for data visualization
+
+- WILL take time to learn 
+
+  - i.e., ggplot aspects take experimentation; time 
+  
+- Necessary for sustainable jobs in policy analysis 
